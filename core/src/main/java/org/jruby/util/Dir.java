@@ -28,6 +28,8 @@
 
 package org.jruby.util;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -680,9 +682,28 @@ public class Dir {
             if (cwd == null) cwd = "C:";
             cwd = cwd + "/";
         }
-        FileResource file = JRubyFile.createResource(runtime, cwd, fileName);
-        if (file.exists()) {
-            return func.call(bytes, begin, end - begin, enc, arg);
+        FileResource fileResource = JRubyFile.createResource(runtime, cwd, fileName);
+        if (fileResource.exists()) {
+            try {
+                String[] parts = fileName.split("/");
+                String actualFileName = null;
+                File file = fileResource.unwrap(File.class).getCanonicalFile();
+                for(int i=0;i<parts.length;i++) {
+                    if(actualFileName==null) {
+                        actualFileName = file.getCanonicalFile().getName();
+                    }
+                    else {
+                        String part = file.getCanonicalFile().getName();
+                        actualFileName = part + "/" + actualFileName;
+                    }
+                    file = file.getParentFile();
+                }
+                
+                byte[] encodedFileName = RubyEncoding.encode(actualFileName, enc.getCharset());
+                return func.call(encodedFileName, 0, encodedFileName.length, enc, arg);
+            } catch (IOException e) {
+                return func.call(bytes, begin, end - begin, enc, arg);
+            }
         }
 
         return 0;

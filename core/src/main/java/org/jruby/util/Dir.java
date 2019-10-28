@@ -684,26 +684,41 @@ public class Dir {
         }
         FileResource fileResource = JRubyFile.createResource(runtime, cwd, fileName);
         if (fileResource.exists()) {
-            try {
-                String[] parts = fileName.split("/");
-                String actualFileName = null;
-                File file = fileResource.unwrap(File.class).getCanonicalFile();
-                for(int i=0;i<parts.length;i++) {
-                    if(actualFileName==null) {
-                        actualFileName = file.getCanonicalFile().getName();
+            if (DOSISH) {
+                //replace_real_basename
+                try { 
+//                    File file = fileResource.unwrap(File.class);
+//                    String actualFileName = file.getCanonicalPath();
+//                    byte[] actualFileNameBytes = actualFileName.getBytes(enc.getCharset());
+//                    int dirsep = 0;
+//                    if (fileName.endsWith("/"))
+//                        dirsep = 1;
+//                    System.arraycopy(actualFileNameBytes, actualFileNameBytes.length - (end-begin) - dirsep,
+//                                    bytes, begin, end-begin);
+                    
+                    
+                    String[] parts = fileName.split("/");
+                    String actualFileName = null;
+                    File file = fileResource.unwrap(File.class).getCanonicalFile();
+                    for (int i = 0; i < parts.length; i++) {
+                        if (actualFileName == null) {
+                            actualFileName = file.getCanonicalFile().getName();
+                        } else {
+                            String part = file.getCanonicalFile().getName();
+                            actualFileName = part + "/" + actualFileName;
+                        }
+                        file = file.getParentFile();
                     }
-                    else {
-                        String part = file.getCanonicalFile().getName();
-                        actualFileName = part + "/" + actualFileName;
-                    }
-                    file = file.getParentFile();
+                    if (fileName.endsWith("/"))
+                        actualFileName += "/";  //join_path
+                    byte[] encodedFileName = RubyEncoding.encode(actualFileName, enc.getCharset());
+                    return func.call(encodedFileName, 0, encodedFileName.length, enc, arg);
+                } catch (IOException e) {
+                    return func.call(bytes, begin, end - begin, enc, arg);
                 }
-                
-                byte[] encodedFileName = RubyEncoding.encode(actualFileName, enc.getCharset());
-                return func.call(encodedFileName, 0, encodedFileName.length, enc, arg);
-            } catch (IOException e) {
-                return func.call(bytes, begin, end - begin, enc, arg);
-            }
+            } else {
+        		return func.call(bytes, begin, end - begin, enc, arg);
+        	}
         }
 
         return 0;

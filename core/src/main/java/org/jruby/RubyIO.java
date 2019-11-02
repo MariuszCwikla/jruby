@@ -1475,6 +1475,14 @@ public class RubyIO extends RubyObject implements IOEncodable, Closeable, Flusha
 
             n = fptr.fwrite(context, str, nosync);
             if (n == -1) throw runtime.newErrnoFromErrno(fptr.errno(), fptr.getPath());
+            
+            // rb_f_p_internal
+            // if (RB_TYPE_P(rb_stdout, T_FILE)) {
+            //      rb_io_flush(rb_stdout);
+            // }
+            
+            if (fptr.isStdio())
+                fptr.io_fflush(context);
         } finally {
             if (locked) fptr.unlock();
         }

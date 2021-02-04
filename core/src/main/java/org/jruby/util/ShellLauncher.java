@@ -1328,13 +1328,25 @@ public class ShellLauncher {
         Process aProcess;
         String virtualCWD = runtime.getCurrentDirectory();
         File pwd = new File(virtualCWD);
+        
+        String[] env; 
+    	if (rawArgs.length > 0 && rawArgs[0] instanceof RubyHash) {
+    		RubyHash argEnv = (RubyHash) rawArgs[0];
+    		env = getCurrentEnv(runtime, argEnv);
+    		IRubyObject[] newArgs = new IRubyObject[rawArgs.length - 1];
+    		System.arraycopy(rawArgs, 1, newArgs, 0, rawArgs.length - 1);
+    		rawArgs = newArgs;
+    	} else {
+    		env = getCurrentEnv(runtime);
+    	}
+    	
         LaunchConfig cfg = new LaunchConfig(runtime, rawArgs, doExecutableSearch);
 
         try {
             if (!forceExternalProcess && cfg.shouldRunInProcess()) {
                 log(runtime, "Launching in-process");
-                ScriptThreadProcess ipScript = new ScriptThreadProcess(runtime,
-                        expandGlobs(runtime, cfg.getExecArgs()), getCurrentEnv(runtime), pwd);
+				ScriptThreadProcess ipScript = new ScriptThreadProcess(runtime,
+                        expandGlobs(runtime, cfg.getExecArgs()), env, pwd);
                 ipScript.start();
                 return ipScript;
             } else {
@@ -1359,7 +1371,7 @@ public class ShellLauncher {
                                 "org.jruby.Main -C " + virtualCWD);
                     }
                 }
-                aProcess = buildProcess(runtime, args, getCurrentEnv(runtime), pwd);
+                aProcess = buildProcess(runtime, args, env, pwd);
             }
         } catch (SecurityException se) {
             throw runtime.newSecurityError(se.getLocalizedMessage());

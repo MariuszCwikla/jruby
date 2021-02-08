@@ -1413,7 +1413,7 @@ public class ShellLauncher {
                 //= (RubyIO) options.get(":in");
                 aProcess = buildProcess(runtime, args, env, pwd, in, out, err);
                 
-                log(runtime, String.format("Process started. pid=%d args=%s", aProcess.pid(), String.join(" ", args)));
+                //log(runtime, String.format("Process started. pid=%d args=%s", aProcess.pid(), String.join(" ", args)));
             }
         } catch (SecurityException se) {
             throw runtime.newSecurityError(se.getLocalizedMessage());

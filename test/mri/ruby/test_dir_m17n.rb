@@ -47,7 +47,9 @@ class TestDir_M17N < Test::Unit::TestCase
   ## UTF-8 default_external, no default_internal
 
   def test_filename_extutf8
-    with_tmpdir {|d|
+    #with_tmpdir {|d|
+	  d = 'foo'
+	  Dir.mkdir(d) unless Dir.exists? d	
       assert_separately(%w[-EUTF-8], <<-'EOS', :chdir=>d)
         filename = "\u3042"
         File.open(filename, "w") {}
@@ -55,7 +57,7 @@ class TestDir_M17N < Test::Unit::TestCase
         ents = Dir.entries(".", opts)
         assert_include(ents, filename)
       EOS
-    }
+    #}
   end
 
   def test_filename_extutf8_invalid

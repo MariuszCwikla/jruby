@@ -1329,16 +1329,26 @@ public class ShellLauncher {
         String virtualCWD = runtime.getCurrentDirectory();
         File pwd = new File(virtualCWD);
         
-        String[] env; 
+        String[] env;
+        int first = 0, last = rawArgs.length - 1;
     	if (rawArgs.length > 0 && rawArgs[0] instanceof RubyHash) {
     		RubyHash argEnv = (RubyHash) rawArgs[0];
     		env = getCurrentEnv(runtime, argEnv);
-    		IRubyObject[] newArgs = new IRubyObject[rawArgs.length - 1];
-    		System.arraycopy(rawArgs, 1, newArgs, 0, rawArgs.length - 1);
-    		rawArgs = newArgs;
+    		first = 1;
+    		
     	} else {
     		env = getCurrentEnv(runtime);
     	}
+    	
+    	RubyHash options = null;
+    	if (rawArgs.length > 0 && rawArgs[last] instanceof RubyHash) {
+    		options = (RubyHash) rawArgs[last];
+    		last--;
+    	}
+    	
+    	IRubyObject[] newArgs = new IRubyObject[last - first + 1];
+    	System.arraycopy(rawArgs, 1, newArgs, 0, last - first + 1);
+    	rawArgs = newArgs;
     	
         LaunchConfig cfg = new LaunchConfig(runtime, rawArgs, doExecutableSearch);
 

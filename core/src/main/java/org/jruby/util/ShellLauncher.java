@@ -59,11 +59,17 @@ import org.jruby.Main;
 import org.jruby.Ruby;
 import org.jruby.RubyArray;
 import org.jruby.RubyHash;
+import org.jruby.RubyHash.Visitor;
+import org.jruby.ast.util.ArgsUtil;
 import org.jruby.RubyIO;
 import org.jruby.RubyInstanceConfig;
 import org.jruby.RubyModule;
 import org.jruby.RubyString;
+import org.jruby.RubySymbol;
+
 import jnr.posix.util.Platform;
+import jnr.posix.util.ProcessMaker;
+
 import org.jruby.javasupport.Java;
 import org.jruby.runtime.Helpers;
 import org.jruby.ext.rbconfig.RbConfigLibrary;
@@ -565,10 +571,28 @@ public class ShellLauncher {
     }
 
     public static Process buildProcess(Ruby runtime, String[] args, String[] env, File pwd) throws IOException {
-        return runtime.getPosix().newProcessMaker(args)
+    	return buildProcess(runtime, args, env, pwd, null, null, null);
+    }
+
+    private static Process buildProcess(Ruby runtime, String[] args, String[] env, File pwd, RubyIO in, RubyIO out, RubyIO err) throws IOException {
+        ProcessMaker builder = runtime.getPosix().newProcessMaker(args)
                 .environment(env)
-                .directory(pwd)
-                .start();
+                .directory(pwd);
+//        if (in != null) {
+//        	File file = in.toJava(File.class);
+//        	builder.redirectInput(file);
+//        }
+//
+//        if (out != null) {
+//        	File file = out.toJava(File.class);
+//        	builder.redirectOutput(file);
+//        }
+//
+//        if (err != null) {
+//        	File file = out.toJava(File.class);
+//        	builder.redirectError(file);
+//        }
+        return builder.start();
     }
 
     public static long runExternalWithoutWait(Ruby runtime, IRubyObject[] rawArgs) {
@@ -1381,7 +1405,15 @@ public class ShellLauncher {
                                 "org.jruby.Main -C " + virtualCWD);
                     }
                 }
-                aProcess = buildProcess(runtime, args, env, pwd);
+                
+                RubyIO in = (RubyIO) options.get(runtime.newSymbol("in"));
+                RubyIO out = (RubyIO) options.get(runtime.newSymbol("out"));
+                RubyIO err = (RubyIO) options.get(runtime.newSymbol("err"));
+                
+                //= (RubyIO) options.get(":in");
+                aProcess = buildProcess(runtime, args, env, pwd, in, out, err);
+                
+                log(runtime, String.format("Process started. pid=%d args=%s", aProcess.pid(), String.join(" ", args)));
             }
         } catch (SecurityException se) {
             throw runtime.newSecurityError(se.getLocalizedMessage());
@@ -1390,7 +1422,7 @@ public class ShellLauncher {
         return aProcess;
     }
 
-    private interface Pumper extends Runnable {
+	private interface Pumper extends Runnable {
         enum Slave { IN, OUT }
         void start();
         void quit();
